@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>老年综合评估 (CGA)</title>
+<!-- PWA / Mobile Web App -->
+<meta name="theme-color" content="#8DA7BE">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="老年综合评估">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238DA7BE'/><text x='50' y='68' text-anchor='middle' font-size='52'>🧓</text></svg>">
+<link rel="manifest" href="./manifest.json">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #f5f0eb; color: #3d3d3d; display: flex; justify-content: center;
+    align-items: flex-start; min-height: 100vh; padding: 20px;
+  }
+  .container {
+    background: #fff; border-radius: 16px; padding: 36px 40px; max-width: 640px;
+    width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  h1 {
+    font-size: 22px; color: #4A4036; text-align: center; margin-bottom: 2px;
+  }
+  .subtitle {
+    text-align: center; color: #999; font-size: 13px; margin-bottom: 20px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 24px; border-radius: 10px;
+    overflow: hidden; border: 1.5px solid #ddd;
+  }
+  .tab {
+    flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600;
+    cursor: pointer; background: #F5F0EB; color: #999; border: none;
+    transition: 0.2s; font-family: inherit; border-right: 1.5px solid #ddd;
+    position: relative;
+  }
+  .tab:last-child { border-right: none; }
+  .tab:hover { background: #E4EBF0; color: #666; }
+  .tab.active { background: #8DA7BE; color: #fff; }
+
+  /* Panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Section title */
+  .section-title {
+    font-size: 15px; font-weight: 700; color: #4A4036; margin: 18px 0 10px;
+    padding-bottom: 8px; border-bottom: 1.5px solid #ddd;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* Form elements */
+  .item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; margin-bottom: 4px; border-radius: 8px;
+    background: #FAFAFA; transition: 0.15s;
+  }
+  .item:hover { background: #EEF2F5; }
+  .item .label {
+    font-size: 13px; color: #555; flex: 1; line-height: 1.4;
+  }
+  .item .label small { color: #aaa; font-weight: 400; }
+  .item select, .item input[type="number"] {
+    padding: 6px 10px; border: 1.5px solid #ddd; border-radius: 6px;
+    font-size: 13px; color: #333; background: #fff; font-family: inherit;
+    min-width: 120px; text-align: center; transition: 0.2s;
+  }
+  .item select:focus, .item input:focus {
+    outline: none; border-color: #8DA7BE; box-shadow: 0 0 0 3px rgba(141,167,190,0.12);
+  }
+
+  /* Radio group */
+  .radio-group { display: flex; gap: 16px; align-items: center; }
+  .radio-group label {
+    font-size: 12px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 4px;
+    user-select: none;
+  }
+  .radio-group input[type="radio"] { accent-color: #8DA7BE; }
+
+  /* Score inline */
+  .domain-score {
+    font-size: 12px; font-weight: 700; color: #8DA7BE; margin-left: 8px; white-space: nowrap;
+  }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; padding: 12px; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    font-family: inherit;
+  }
+  .btn.primary { background: #8DA7BE; color: #fff; }
+  .btn.primary:hover { background: #7D9AAE; }
+  .btn.primary:active { transform: scale(0.98); }
+  .btn.secondary { background: #EEF2F5; color: #7D9AAE; }
+  .btn.secondary:hover { background: #DDE5EC; }
+
+  /* Result area */
+  .result {
+    margin-top: 20px; padding: 20px; border-radius: 12px; display: none;
+    text-align: center;
+  }
+  .result.show { display: block; }
+  .result .score {
+    font-size: 42px; font-weight: 700; line-height: 1;
+  }
+  .result .status {
+    font-size: 18px; font-weight: 600; margin-top: 6px;
+  }
+  .result .desc {
+    font-size: 13px; margin-top: 4px; color: #666;
+  }
+  .result .detail {
+    margin-top: 14px; font-size: 12px; color: #999; padding-top: 14px;
+    border-top: 1px solid #eee; text-align: left; line-height: 1.8;
+  }
+  .result .detail span { color: #666; font-weight: 600; }
+
+  /* Level colors */
+  .level-good .score { color: #82E0AA; }
+  .level-good .status { color: #1E8449; }
+  .level-good { background: #F0FAF3; border: 1px solid #D5F5E3; }
+
+  .level-mild .score { color: #85C1E9; }
+  .level-mild .status { color: #1A5276; }
+  .level-mild { background: #F0F7FC; border: 1px solid #D4E6F1; }
+
+  .level-moderate .score { color: #F9E79F; }
+  .level-moderate .status { color: #7D6608; }
+  .level-moderate { background: #FFFEF5; border: 1px solid #FEF9E7; }
+
+  .level-severe .score { color: #F1948A; }
+  .level-severe .status { color: #922B21; }
+  .level-severe { background: #FDF2F2; border: 1px solid #FADBD8; }
+
+  /* NRS-2002 initial screen */
+  .initial-screen {
+    background: #FAFAFA; border-radius: 10px; padding: 18px 20px; margin-bottom: 16px;
+    border: 1.5px solid #ddd;
+  }
+  .initial-screen h3 { font-size: 14px; color: #4A4036; margin-bottom: 12px; }
+  .initial-screen .screen-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; font-size: 13px; color: #555;
+  }
+  .screen-hint { font-size: 11px; color: #999; margin-top: 10px; text-align: center; }
+
+  /* Label for select items */
+  .select-label { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+  /* Guide note */
+  .guide {
+    margin-top: 20px; padding: 14px 16px; background: #FAFAFA; border-radius: 8px;
+    font-size: 12px; color: #888; line-height: 1.6;
+  }
+  .guide strong { color: #666; }
+
+  /* NRS-2002 final screening note */
+  .final-screen-note {
+    text-align: center; color: #aaa; font-size: 13px; padding: 20px;
+  }
+
+  @media (max-width: 480px) {
+    .container { padding: 24px 16px; }
+    .tabs { flex-wrap: wrap; }
+    .tab { font-size: 11px; padding: 8px 4px; }
+    .item { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .item select, .item input[type="number"] { width: 100%; min-width: auto; }
+    .radio-group { flex-wrap: wrap; gap: 10px; }
+    .btn-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>老年综合评估</h1>
+  <p class="subtitle">Comprehensive Geriatric Assessment</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('adl', this)">📋 ADL<br><small>日常生活活动</small></button>
+    <button class="tab" onclick="switchTab('mmse', this)">🧠 MMSE<br><small>认知功能</small></button>
+    <button class="tab" onclick="switchTab('gds', this)">😊 GDS<br><small>抑郁评估</small></button>
+    <button class="tab" onclick="switchTab('nrs', this)">🍽️ NRS-2002<br><small>营养风险</small></button>
+  </div>
+
+  <!-- ==================== ADL Panel ==================== -->
+  <div id="panel-adl" class="panel active">
+
+    <div class="section-title">Barthel Index — 日常生活活动能力评定量表</div>
+
+    <div class="item">
+      <span class="label">1. 进食</span>
+      <select id="adl_1" onchange="calcADL()">
+        <option value="10">10分 — 独立进食</option>
+        <option value="5">5分 — 需部分帮助</option>
+        <option value="0">0分 — 完全依赖</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">2. 洗澡</span>
+      <select id="adl_2" onchange="calcADL()">
+        <option value="5">5分 — 独立完成</option>
+        <option value="0">0分 — 需他人帮助</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">3. 修饰 <small>（洗脸、刷牙、梳头、剃须）</small></span>
+      <select id="adl_3" onchange="calcADL()">
+        <option value="5">5分 — 独立完成</option>
+        <option value="0">0分 — 需他人帮助</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">4. 穿衣 <small>（穿脱衣裤、系扣、拉拉链、鞋袜）</small></span>
+      <select id="adl_4" onchange="calcADL()">
+        <option value="10">10分 — 独立完成</option>
+        <option value="5">5分 — 需部分帮助</option>
+        <option value="0">0分 — 完全依赖</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">5. 控制大便</span>
+      <select id="adl_5" onchange="calcADL()">
+        <option value="10">10分 — 自主控制</option>
+        <option value="5">5分 — 偶尔失控（≤1次/周）</option>
+        <option value="0">0分 — 完全失控</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">6. 控制小便</span>
+      <select id="adl_6" onchange="calcADL()">
+        <option value="10">10分 — 自主控制</option>
+        <option value="5">5分 — 偶尔失控（<1次/日）</option>
+        <option value="0">0分 — 完全失控/留置导尿管</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">7. 如厕 <small>（去厕所、擦净、整理衣裤、冲水）</small></span>
+      <select id="adl_7" onchange="calcADL()">
+        <option value="10">10分 — 独立完成</option>
+        <option value="5">5分 — 需部分帮助</option>
+        <option value="0">0分 — 完全依赖</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">8. 床椅转移</span>
+      <select id="adl_8" onchange="calcADL()">
+        <option value="15">15分 — 独立完成</option>
+        <option value="10">10分 — 需少量帮助（1人监督/口头提示）</option>
+        <option value="5">5分 — 需较大帮助（1人躯体辅助）</option>
+        <option value="0">0分 — 完全依赖</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">9. 平地行走 <small>（45米，可用拐杖等辅助器具）</small></span>
+      <select id="adl_9" onchange="calcADL()">
+        <option value="15">15分 — 独立行走45米</option>
+        <option value="10">10分 — 需1人部分帮助行走45米</option>
+        <option value="5">5分 — 不能行走但能独立操作轮椅</option>
+        <option value="0">0分 — 完全不能移动</option>
+      </select>
+    </div>
+    <div class="item">
+      <span class="label">10. 上下楼梯 <small>（可用扶手、拐杖）</small></span>
+      <select id="adl_10" onchange="calcADL()">
+        <option value="10">10分 — 独立上下楼</option>
+        <option value="5">5分 — 需部分帮助</option>
+        <option value="0">0分 — 完全依赖</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn secondary" onclick="resetADL()">重置 ADL</button>
+      <button class="btn primary" onclick="calcADL()">计算 ADL 评分</button>
+    </div>
+
+    <div id="result-adl" class="result"></div>
+
+    <div class="guide">
+      <strong>📌 ADL评分说明：</strong><br>
+      总分 0–100 分。100分 = 生活完全自理；61–99分 = 轻度功能障碍，基本自理；41–60分 = 中度功能障碍，需帮助；21–40分 = 重度功能障碍，明显依赖；0–20分 = 极严重功能缺陷，完全依赖。<br>
+      <strong>评定原则：</strong>记录患者实际能做到的，而非潜在能力。允许使用辅助器具（拐杖、扶手等），不需他人帮助即为自理。
+    </div>
+  </div>
+
+  <!-- ==================== MMSE Panel ==================== -->
+  <div id="panel-mmse" class="panel">
+
+    <div class="section-title">MMSE — 简易智能精神状态检查量表（0–30分）</div>
+
+    <!-- Domain 1: Orientation -->
+    <div class="section-title">一、定向力（10分）— 时间定向</div>
+    <div class="item"><span class="label">1. 今年是哪一年？</span>
+      <select id="mmse_1"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">2. 现在是什么季节？</span>
+      <select id="mmse_2"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">3. 现在是几月份？（前后1天可接受）</span>
+      <select id="mmse_3"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">4. 今天是几号？（前后1天可接受）</span>
+      <select id="mmse_4"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">5. 今天是星期几？（前后1天可接受）</span>
+      <select id="mmse_5"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <div class="section-title">一、定向力（10分）— 地点定向</div>
+    <div class="item"><span class="label">6. 我们在哪个省/市？</span>
+      <select id="mmse_6"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">7. 我们在哪个区/县？</span>
+      <select id="mmse_7"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">8. 我们在什么街道/乡？</span>
+      <select id="mmse_8"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">9. 现在在什么地方？（医院/诊所名称）</span>
+      <select id="mmse_9"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">10. 这里是第几层楼？</span>
+      <select id="mmse_10"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <!-- Domain 2: Registration -->
+    <div class="section-title">二、记忆力（3分）— 即刻记忆</div>
+    <p style="font-size:12px;color:#aaa;margin-bottom:6px;">检查者说"皮球、国旗、树木"，请被试者重复一遍（仅记录首次回答）</p>
+    <div class="item"><span class="label">11. 皮球</span>
+      <select id="mmse_11"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">12. 国旗</span>
+      <select id="mmse_12"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">13. 树木</span>
+      <select id="mmse_13"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <!-- Domain 3: Attention & Calculation -->
+    <div class="section-title">三、注意力和计算力（5分）— 连续减7</div>
+    <p style="font-size:12px;color:#aaa;margin-bottom:6px;">100−7=93 → 93−7=86 → 86−7=79 → 79−7=72 → 72−7=65（前一步错了、后一步按前一步结果正确减7仍给分）</p>
+    <div class="item"><span class="label">14. 100−7 = 93</span>
+      <select id="mmse_14"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">15. 93−7 = 86</span>
+      <select id="mmse_15"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">16. 86−7 = 79</span>
+      <select id="mmse_16"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">17. 79−7 = 72</span>
+      <select id="mmse_17"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">18. 72−7 = 65</span>
+      <select id="mmse_18"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <!-- Domain 4: Recall -->
+    <div class="section-title">四、回忆能力（3分）— 延迟回忆</div>
+    <p style="font-size:12px;color:#aaa;margin-bottom:6px;">"现在请说出刚才记住的三样东西"（不计顺序）</p>
+    <div class="item"><span class="label">19. 皮球</span>
+      <select id="mmse_19"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">20. 国旗</span>
+      <select id="mmse_20"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">21. 树木</span>
+      <select id="mmse_21"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <!-- Domain 5: Language -->
+    <div class="section-title">五、语言能力（9分）— 命名</div>
+    <div class="item"><span class="label">22. 命名：手表（出示手表问"这是什么？"）</span>
+      <select id="mmse_22"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">23. 命名：铅笔（出示铅笔问"这是什么？"）</span>
+      <select id="mmse_23"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <div class="section-title">五、语言能力（9分）— 复述</div>
+    <div class="item"><span class="label">24. 复述："大家齐心协力拉紧绳"（完整清晰复述才得分）</span>
+      <select id="mmse_24"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <div class="section-title">五、语言能力（9分）— 三步指令</div>
+    <p style="font-size:12px;color:#aaa;margin-bottom:6px;">"用右手拿这张纸，把它对折起来，然后放在你的左腿上。"（只说一遍，不重复）</p>
+    <div class="item"><span class="label">25. 用右手拿纸</span>
+      <select id="mmse_25"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">26. 对折起来</span>
+      <select id="mmse_26"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">27. 放在左腿上</span>
+      <select id="mmse_27"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <div class="section-title">五、语言能力（9分）— 阅读、书写、视空间</div>
+    <div class="item"><span class="label">28. 阅读理解：出示"请闭上您的眼睛"，按指令做</span>
+      <select id="mmse_28"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">29. 书写：写一句完整的、有意义的句子</span>
+      <select id="mmse_29"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+    <div class="item"><span class="label">30. 视空间：照画两个交叉的五边形</span>
+      <select id="mmse_30"><option value="1" selected>1 — 正确</option><option value="0">0 — 错误</option></select></div>
+
+    <!-- Education level for MMSE adjustment -->
+    <div class="section-title">教育程度校正</div>
+    <div class="item">
+      <span class="label">受教育程度</span>
+      <select id="mmse_edu">
+        <option value="illiterate">文盲（0年）</option>
+        <option value="primary">小学（≤6年）</option>
+        <option value="secondary" selected>中学及以上（>6年）</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn secondary" onclick="resetMMSE()">重置 MMSE</button>
+      <button class="btn primary" onclick="calcMMSE()">计算 MMSE 评分</button>
+    </div>
+
+    <div id="result-mmse" class="result"></div>
+
+    <div class="guide">
+      <strong>📌 MMSE评分说明：</strong><br>
+      满分30分。教育程度校正：文盲 ≤17分、小学 ≤20分、中学及以上 ≤24分提示认知障碍。<br>
+      严重程度：27-30正常；21-26轻度认知障碍；10-20中度痴呆；0-9重度痴呆。<br>
+      <strong>注意：</strong>文盲患者的阅读（第28题）和书写（第29题）应记为0分，校正界值已考虑此项。
+    </div>
+  </div>
+
+  <!-- ==================== GDS Panel ==================== -->
+  <div id="panel-gds" class="panel">
+
+    <div class="section-title">GDS-15 — 老年抑郁量表（简版，0–15分）</div>
+    <p style="font-size:12px;color:#aaa;margin-bottom:10px;">请根据最近一周的感受，回答以下问题（是/否）</p>
+
+    <div class="item"><span class="label">1. 您对生活基本满意吗？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_1" value="0" checked> 是</label>
+        <label><input type="radio" name="gds_1" value="1"> 否</label>
+      </span></div>
+    <div class="item"><span class="label">2. 您是否放弃了许多活动和兴趣爱好？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_2" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_2" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">3. 您是否觉得生活空虚？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_3" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_3" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">4. 您是否常常感到厌烦？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_4" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_4" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">5. 您大部分时间精神好吗？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_5" value="0" checked> 是</label>
+        <label><input type="radio" name="gds_5" value="1"> 否</label>
+      </span></div>
+    <div class="item"><span class="label">6. 您是否担心有不好的事发生在自己身上？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_6" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_6" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">7. 您大部分时间感到快乐吗？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_7" value="0" checked> 是</label>
+        <label><input type="radio" name="gds_7" value="1"> 否</label>
+      </span></div>
+    <div class="item"><span class="label">8. 您是否常常感到无助？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_8" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_8" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">9. 您是否宁愿待在家里也不愿出去做新的事情？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_9" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_9" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">10. 您觉得记忆力比大多数人差吗？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_10" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_10" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">11. 您觉得活到现在真好？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_11" value="0" checked> 是</label>
+        <label><input type="radio" name="gds_11" value="1"> 否</label>
+      </span></div>
+    <div class="item"><span class="label">12. 您是否觉得自己很没用？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_12" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_12" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">13. 您是否感到精力充沛？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_13" value="0" checked> 是</label>
+        <label><input type="radio" name="gds_13" value="1"> 否</label>
+      </span></div>
+    <div class="item"><span class="label">14. 您是否觉得自己的处境没有希望？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_14" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_14" value="1"> 是</label>
+      </span></div>
+    <div class="item"><span class="label">15. 您是否觉得大多数人比自己过得好？</span>
+      <span class="radio-group">
+        <label><input type="radio" name="gds_15" value="0" checked> 否</label>
+        <label><input type="radio" name="gds_15" value="1"> 是</label>
+      </span></div>
+
+    <div class="btn-row">
+      <button class="btn secondary" onclick="resetGDS()">重置 GDS</button>
+      <button class="btn primary" onclick="calcGDS()">计算 GDS 评分</button>
+    </div>
+
+    <div id="result-gds" class="result"></div>
+
+    <div class="guide">
+      <strong>📌 GDS评分说明：</strong><br>
+      15题简版，每题1分（抑郁性回答），总分0–15分。<br>
+      <strong>判定：</strong>0–4分 = 正常；5–8分 = 轻度抑郁；9–11分 = 中度抑郁；12–15分 = 重度抑郁。<br>
+      第1、5、7、11、13题为反向计分（回答"否"得1分），其余题目回答"是"得1分。<br>
+      <strong>注意：</strong>此为筛查工具，非诊断标准。阳性结果需进一步临床评估。
+    </div>
+  </div>
+
+  <!-- ==================== NRS-2002 Panel ==================== -->
+  <div id="panel-nrs" class="panel">
+
+    <div class="section-title">NRS-2002 — 营养风险筛查量表（0–7分）</div>
+
+    <!-- Initial Screening -->
+    <div class="initial-screen">
+      <h3>🔍 第一步：初筛（任意一项"是"则进入最终筛查）</h3>
+      <div class="screen-item">
+        <span>1. BMI &lt; 18.5 kg/m²？（中国标准）</span>
+        <span class="radio-group">
+          <label><input type="radio" name="nrs_init_1" value="yes"> 是</label>
+          <label><input type="radio" name="nrs_init_1" value="no" checked> 否</label>
+        </span>
+      </div>
+      <div class="screen-item">
+        <span>2. 过去3个月内体重下降？</span>
+        <span class="radio-group">
+          <label><input type="radio" name="nrs_init_2" value="yes"> 是</label>
+          <label><input type="radio" name="nrs_init_2" value="no" checked> 否</label>
+        </span>
+      </div>
+      <div class="screen-item">
+        <span>3. 过去1周内进食量减少？</span>
+        <span class="radio-group">
+          <label><input type="radio" name="nrs_init_3" value="yes"> 是</label>
+          <label><input type="radio" name="nrs_init_3" value="no" checked> 否</label>
+        </span>
+      </div>
+      <div class="screen-item">
+        <span>4. 患有严重疾病（如ICU患者）？</span>
+        <span class="radio-group">
+          <label><input type="radio" name="nrs_init_4" value="yes"> 是</label>
+          <label><input type="radio" name="nrs_init_4" value="no" checked> 否</label>
+        </span>
+      </div>
+      <p class="screen-hint" id="nrs-init-hint">请完成初筛后点击"进入最终筛查"</p>
+      <button class="btn primary" style="margin-top:10px;" onclick="enterFinalScreen()">进入最终筛查 →</button>
+    </div>
+
+    <!-- Final Screening (initially hidden) -->
+    <div id="nrs-final" style="display:none;">
+      <div class="section-title">第二步：最终筛查</div>
+
+      <div class="section-title">A. 营养状况受损评分（0–3分）</div>
+      <p style="font-size:12px;color:#aaa;margin-bottom:8px;">根据体重下降程度、BMI 或进食量综合判断，取最高一项的得分</p>
+      <div class="item">
+        <span class="label">营养状况评分</span>
+        <select id="nrs_nutrition" onchange="calcNRS()">
+          <option value="0" selected>0分 — 营养状况正常</option>
+          <option value="1">1分 — 3个月内体重下降&gt;5% 或 近1周进食量减少25-50%</option>
+          <option value="2">2分 — 2个月内体重下降&gt;5% 或 BMI 18.5-20.5 或 近1周进食量减少50-75%</option>
+          <option value="3">3分 — 1个月内体重下降&gt;5%(或3个月&gt;15%) 或 BMI&lt;18.5 或 近1周进食量减少75-100%</option>
+        </select>
+      </div>
+
+      <div class="section-title">B. 疾病严重程度评分（0–3分）</div>
+      <p style="font-size:12px;color:#aaa;margin-bottom:8px;">根据疾病应激代谢程度评分</p>
+      <div class="item">
+        <span class="label">疾病严重程度评分</span>
+        <select id="nrs_disease" onchange="calcNRS()">
+          <option value="0" selected>0分 — 正常营养需求</option>
+          <option value="1">1分 — 髋骨折、慢性疾病（肝硬化、COPD）、血液透析、糖尿病、肿瘤</option>
+          <option value="2">2分 — 腹部大手术、脑卒中、重症肺炎、血液系统恶性肿瘤</option>
+          <option value="3">3分 — 颅脑损伤、骨髓移植、ICU患者（APACHE II &gt;10）</option>
+        </select>
+      </div>
+
+      <div class="section-title">C. 年龄调整</div>
+      <div class="item">
+        <span class="label">年龄 ≥ 70岁？（+1分）</span>
+        <span class="radio-group">
+          <label><input type="radio" name="nrs_age" value="1"> 是</label>
+          <label><input type="radio" name="nrs_age" value="0" checked> 否</label>
+        </span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn secondary" onclick="resetNRS()">重置 NRS-2002</button>
+        <button class="btn primary" onclick="calcNRS()">计算 NRS-2002 评分</button>
+      </div>
+    </div>
+
+    <div id="result-nrs" class="result"></div>
+
+    <div class="guide">
+      <strong>📌 NRS-2002评分说明：</strong><br>
+      总分 0–7分 = 营养状况受损(0–3) + 疾病严重程度(0–3) + 年龄(≥70岁 +1)。<br>
+      <strong>判定：</strong>总分 ≥ 3分 = 存在营养风险，需制定营养支持计划。总分 &lt; 3分 = 暂未发现营养风险，建议1周后复查。<br>
+      <strong>流程：</strong>先完成初筛，任意一项为"是"则进入最终筛查；若全部为"否"则暂不筛查，但需每周复查。<br>
+      <strong>注意：</strong>初筛BMI阈值采用中国标准（< 18.5 kg/m²）。严重水肿/腹水无法测量BMI时，可用血清白蛋白 < 30 g/L 替代（计3分）。
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<script>
+// ==================== Tab Switching ====================
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ==================== ADL ====================
+function calcADL() {
+  let total = 0;
+  for (let i = 1; i <= 10; i++) {
+    const el = document.getElementById('adl_' + i);
+    if (el) total += parseInt(el.value);
+  }
+  showResult('adl', total, 100, getADLLevel(total), getADLDetail());
+}
+
+function getADLLevel(score) {
+  if (score === 100) return { cls: 'level-good', status: '✅ 生活完全自理', desc: '无需他人照护，功能状态良好' };
+  if (score >= 61) return { cls: 'level-mild', status: '📗 轻度功能障碍', desc: '生活基本自理，少部分需他人照护' };
+  if (score >= 41) return { cls: 'level-moderate', status: '📙 中度功能障碍', desc: '生活需要帮助，大部分需他人照护（康复获益大）' };
+  if (score >= 21) return { cls: 'level-severe', status: '📕 重度功能障碍', desc: '生活依赖明显，需很大帮助' };
+  return { cls: 'level-severe', status: '📕 极严重功能缺陷', desc: '生活完全依赖他人照护' };
+}
+
+function getADLDetail() {
+  const items = [
+    '进食','洗澡','修饰','穿衣','大便控制','小便控制','如厕','床椅转移','平地行走','上下楼梯'
+  ];
+  let html = '';
+  let total = 0;
+  for (let i = 1; i <= 10; i++) {
+    const el = document.getElementById('adl_' + i);
+    const v = parseInt(el.value);
+    total += v;
+    html += (i) + '. ' + items[i-1] + '：<span>' + v + '分</span><br>';
+  }
+  html += '—————————————<br>ADL 总分 = <strong>' + total + ' / 100</strong>';
+  return html;
+}
+
+function resetADL() {
+  for (let i = 1; i <= 10; i++) {
+    const el = document.getElementById('adl_' + i);
+    if (!el) continue;
+    if (i === 8 || i === 9) el.value = '15';
+    else if (i === 1 || i === 4 || i === 5 || i === 6 || i === 7 || i === 10) el.value = '10';
+    else el.value = '5';
+  }
+  document.getElementById('result-adl').classList.remove('show');
+}
+
+// ==================== MMSE ====================
+function calcMMSE() {
+  let total = 0;
+  let domainScores = { orient: 0, regist: 0, attn: 0, recall: 0, lang: 0 };
+  for (let i = 1; i <= 30; i++) {
+    const el = document.getElementById('mmse_' + i);
+    const v = parseInt(el.value);
+    total += v;
+    if (i <= 10) domainScores.orient += v;
+    else if (i <= 13) domainScores.regist += v;
+    else if (i <= 18) domainScores.attn += v;
+    else if (i <= 21) domainScores.recall += v;
+    else domainScores.lang += v;
+  }
+  const edu = document.getElementById('mmse_edu').value;
+  let cutoff, eduLabel;
+  if (edu === 'illiterate') { cutoff = 17; eduLabel = '文盲（0年）'; }
+  else if (edu === 'primary') { cutoff = 20; eduLabel = '小学（≤6年）'; }
+  else { cutoff = 24; eduLabel = '中学及以上（>6年）'; }
+
+  let cls, status, desc;
+  if (total >= 27) { cls = 'level-good'; status = '✅ 认知功能正常'; desc = '各认知域表现良好'; }
+  else if (total >= 21) { cls = 'level-mild'; status = '📗 轻度认知障碍'; desc = '可能存在特定认知域缺陷，建议进一步评估'; }
+  else if (total >= 10) { cls = 'level-moderate'; status = '📙 中度痴呆'; desc = '认知障碍已影响日常功能，需制定照护计划'; }
+  else { cls = 'level-severe'; status = '📕 重度痴呆'; desc = '严重认知障碍，需全方位照护'; }
+
+  const impaired = total <= cutoff;
+  const detail = '定向力：<span>' + domainScores.orient + '</span>/10 · ' +
+    '记忆力：<span>' + domainScores.regist + '</span>/3 · ' +
+    '注意与计算：<span>' + domainScores.attn + '</span>/5 · ' +
+    '回忆：<span>' + domainScores.recall + '</span>/3 · ' +
+    '语言：<span>' + domainScores.lang + '</span>/9<br>' +
+    '教育程度：<span>' + eduLabel + '</span>，界值 ≤<span>' + cutoff + '</span>分<br>' +
+    '—————————————<br>' +
+    'MMSE 总分 = <strong>' + total + ' / 30</strong>' +
+    (impaired ? ' ⚠️ 低于教育校正界值，提示认知障碍' : ' ✓ 在教育校正界值以上');
+
+  showResult('mmse', total, 30, { cls, status, desc }, detail);
+}
+
+function resetMMSE() {
+  for (let i = 1; i <= 30; i++) {
+    document.getElementById('mmse_' + i).value = '1';
+  }
+  document.getElementById('mmse_edu').value = 'secondary';
+  document.getElementById('result-mmse').classList.remove('show');
+}
+
+// ==================== GDS ====================
+function calcGDS() {
+  let total = 0;
+  for (let i = 1; i <= 15; i++) {
+    const radios = document.getElementsByName('gds_' + i);
+    for (const r of radios) {
+      if (r.checked) total += parseInt(r.value);
+    }
+  }
+  let cls, status, desc;
+  if (total <= 4) { cls = 'level-good'; status = '✅ 正常'; desc = '无明显抑郁症状'; }
+  else if (total <= 8) { cls = 'level-mild'; status = '📗 轻度抑郁'; desc = '可能存在抑郁情绪，建议关注和随访'; }
+  else if (total <= 11) { cls = 'level-moderate'; status = '📙 中度抑郁'; desc = '存在明显抑郁症状，建议进一步临床评估'; }
+  else { cls = 'level-severe'; status = '📕 重度抑郁'; desc = '严重抑郁症状，需尽快进行专业干预'; }
+
+  showResult('gds', total, 15, { cls, status, desc }, getGDSDetail(total));
+}
+
+function getGDSDetail(score) {
+  let details = [];
+  for (let i = 1; i <= 15; i++) {
+    const radios = document.getElementsByName('gds_' + i);
+    for (const r of radios) {
+      if (r.checked && parseInt(r.value) === 1) {
+        const label = r.closest('.item').querySelector('.label').textContent.trim().replace(/^\d+\.\s*/, '');
+        details.push('第' + i + '题：<span>阳性</span>（' + label + '）');
+      }
+    }
+  }
+  if (details.length === 0) return '全部回答为阴性，无抑郁相关回答。<br>—————————————<br>GDS 总分 = <strong>0 / 15</strong>';
+  return details.join('<br>') + '<br>—————————————<br>GDS 总分 = <strong>' + score + ' / 15</strong>';
+}
+
+function resetGDS() {
+  // 第1,5,7,11,13 题默认为"是"(value=0)，其余默认为"否"(value=0)
+  const defaults = { 1: 0, 5: 0, 7: 0, 11: 0, 13: 0 };
+  for (let i = 1; i <= 15; i++) {
+    const radios = document.getElementsByName('gds_' + i);
+    const defVal = defaults[i] !== undefined ? defaults[i] : 0;
+    for (const r of radios) {
+      r.checked = parseInt(r.value) === defVal;
+    }
+  }
+  document.getElementById('result-gds').classList.remove('show');
+}
+
+// ==================== NRS-2002 ====================
+function enterFinalScreen() {
+  const initChecks = [];
+  for (let i = 1; i <= 4; i++) {
+    const radios = document.getElementsByName('nrs_init_' + i);
+    for (const r of radios) {
+      if (r.checked && r.value === 'yes') initChecks.push(i);
+    }
+  }
+  if (initChecks.length > 0) {
+    document.getElementById('nrs-final').style.display = 'block';
+    document.getElementById('nrs-init-hint').textContent = '✅ 初筛通过（项 ' + initChecks.join(', ') + ' 为"是"），请继续完成最终筛查';
+    document.getElementById('nrs-init-hint').style.color = '#8DA7BE';
+  } else {
+    document.getElementById('nrs-final').style.display = 'none';
+    document.getElementById('nrs-init-hint').textContent = '⚠️ 初筛全部为"否"，暂无需进行营养风险筛查，建议定期复查';
+    document.getElementById('nrs-init-hint').style.color = '#E8A87C';
+    document.getElementById('result-nrs').classList.remove('show');
+  }
+}
+
+function calcNRS() {
+  // Check if final screen is visible
+  const finalDiv = document.getElementById('nrs-final');
+  if (finalDiv.style.display === 'none' || !finalDiv.style.display) {
+    // Check if any init screen is yes
+    let anyYes = false;
+    for (let i = 1; i <= 4; i++) {
+      const radios = document.getElementsByName('nrs_init_' + i);
+      for (const r of radios) {
+        if (r.checked && r.value === 'yes') anyYes = true;
+      }
+    }
+    if (!anyYes) {
+      document.getElementById('result-nrs').className = 'result show level-good';
+      document.getElementById('result-nrs').innerHTML =
+        '<div class="score" style="color:#82E0AA;">—</div>' +
+        '<div class="status" style="color:#1E8449;">✅ 初筛阴性</div>' +
+        '<div class="desc">无需进一步筛查，建议1周后复查</div>';
+      return;
+    }
+    finalDiv.style.display = 'block';
+  }
+
+  const nutrition = parseInt(document.getElementById('nrs_nutrition').value);
+  const disease = parseInt(document.getElementById('nrs_disease').value);
+  let age = 0;
+  const ageRadios = document.getElementsByName('nrs_age');
+  for (const r of ageRadios) { if (r.checked) age = parseInt(r.value); }
+
+  const total = nutrition + disease + age;
+
+  let cls, status, desc;
+  if (total >= 3) {
+    cls = 'level-severe';
+    status = '📕 存在营养风险';
+    desc = '总分≥3分，需制定营养支持计划，进行营养干预';
+  } else {
+    cls = 'level-good';
+    status = '✅ 暂未发现营养风险';
+    desc = '总分<3分，建议1周后复查';
+  }
+
+  const detail = '营养状况受损：<span>' + nutrition + '</span> / 3<br>' +
+    '疾病严重程度：<span>' + disease + '</span> / 3<br>' +
+    '年龄（≥70岁）：<span>' + (age ? '+1' : '0') + '</span><br>' +
+    '—————————————<br>' +
+    'NRS-2002 总分 = <strong>' + total + ' / 7</strong>' +
+    (total >= 3 ? ' ⚠️ 存在营养风险，需干预！' : '');
+
+  showResult('nrs', total, 7, { cls, status, desc }, detail);
+}
+
+function resetNRS() {
+  for (let i = 1; i <= 4; i++) {
+    const radios = document.getElementsByName('nrs_init_' + i);
+    for (const r of radios) { r.checked = r.value === 'no'; }
+  }
+  document.getElementById('nrs_nutrition').value = '0';
+  document.getElementById('nrs_disease').value = '0';
+  const ageRadios = document.getElementsByName('nrs_age');
+  for (const r of ageRadios) { r.checked = r.value === '0'; }
+  document.getElementById('nrs-final').style.display = 'none';
+  document.getElementById('nrs-init-hint').textContent = '请完成初筛后点击"进入最终筛查"';
+  document.getElementById('nrs-init-hint').style.color = '#999';
+  document.getElementById('result-nrs').classList.remove('show');
+}
+
+// ==================== Shared Result Display ====================
+function showResult(scale, score, maxScore, level, detail) {
+  const resultDiv = document.getElementById('result-' + scale);
+  resultDiv.className = 'result show ' + level.cls;
+  resultDiv.innerHTML =
+    '<div class="score">' + score + '</div>' +
+    '<div class="status">' + level.status + '</div>' +
+    '<div class="desc">' + level.desc + '</div>' +
+    '<div class="detail">' + (typeof detail === 'string' ? detail : detail) + '</div>';
+}
+
+// ==================== Initial Calculation ====================
+calcADL();
+
+// ==================== PWA: Register service worker ====================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>

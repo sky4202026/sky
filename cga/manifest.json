@@ -1,0 +1,18 @@
+{
+  "name": "老年综合评估",
+  "short_name": "CGA评估",
+  "description": "老年综合评估工具 — ADL日常生活活动 · MMSE认知功能 · GDS抑郁评估 · NRS-2002营养风险筛查",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0eb",
+  "theme_color": "#8DA7BE",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238DA7BE'/><text x='50' y='68' text-anchor='middle' font-size='52'>🧓</text></svg>",
+      "sizes": "100x100",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
