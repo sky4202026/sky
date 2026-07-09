@@ -655,10 +655,11 @@
   // ==================== 欢迎遮罩 ====================
   const overlay = document.getElementById('welcomeOverlay');
 
-  // ==================== 背景音乐（WAV + <audio>） ====================
+  // ==================== 背景音乐 ====================
   let musicStarted = false;
   let musicAudio = null;
 
+  // 预生成WAV音频
   function buildWAV() {
     const notes = [
       { freq: 523.25, dur: 0.3 }, { freq: 523.25, dur: 0.3 }, { freq: 587.33, dur: 0.4 },
@@ -697,21 +698,29 @@
     return new Blob([buf], { type: 'audio/wav' });
   }
 
-  const musicBlobUrl = URL.createObjectURL(buildWAV());
+  // 提前创建 audio 元素并加入DOM（iOS 要求 audio 元素必须在 DOM 中）
+  var musicBlobUrl = URL.createObjectURL(buildWAV());
+  var audioEl = document.createElement('audio');
+  audioEl.src = musicBlobUrl;
+  audioEl.preload = 'auto';
+  audioEl.volume = 0.3;
+  audioEl.style.display = 'none';
+  document.body.appendChild(audioEl);
+  musicAudio = audioEl;
 
   function initMusic() {
     if (musicStarted) return;
     musicStarted = true;
     if (overlay) overlay.classList.add('hidden');
     try {
-      musicAudio = new Audio(musicBlobUrl);
-      musicAudio.volume = 0.3;
-      musicAudio.play().catch(function() {});
+      // iOS 需要在用户手势里同步调用 play
+      var p = audioEl.play();
+      if (p && p.catch) { p.catch(function() {}); }
     } catch(e) {}
   }
 
   function boostMusic() {
-    if (musicAudio) musicAudio.volume = Math.min(1, musicAudio.volume + 0.4);
+    if (audioEl) audioEl.volume = Math.min(1, audioEl.volume + 0.4);
   }
 
   if (overlay) {
