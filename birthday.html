@@ -657,65 +657,22 @@
 
   // ==================== 背景音乐 ====================
   let musicStarted = false;
-  let musicAudio = null;
 
-  // 预生成WAV音频
-  function buildWAV() {
-    const notes = [
-      { freq: 523.25, dur: 0.3 }, { freq: 523.25, dur: 0.3 }, { freq: 587.33, dur: 0.4 },
-      { freq: 523.25, dur: 0.4 }, { freq: 659.25, dur: 0.4 }, { freq: 587.33, dur: 0.6 },
-      { freq: 523.25, dur: 0.3 }, { freq: 523.25, dur: 0.3 }, { freq: 587.33, dur: 0.4 },
-      { freq: 523.25, dur: 0.4 }, { freq: 783.99, dur: 0.4 }, { freq: 659.25, dur: 0.6 },
-      { freq: 523.25, dur: 0.3 }, { freq: 523.25, dur: 0.3 }, { freq: 1046.50, dur: 0.4 },
-      { freq: 880.00, dur: 0.4 }, { freq: 659.25, dur: 0.4 }, { freq: 587.33, dur: 0.4 },
-      { freq: 698.46, dur: 0.3 }, { freq: 698.46, dur: 0.3 }, { freq: 659.25, dur: 0.4 },
-      { freq: 587.33, dur: 0.4 }, { freq: 783.99, dur: 0.4 }, { freq: 659.25, dur: 0.8 }
-    ];
-    const sr = 44100;
-    let total = 0;
-    const segs = notes.map(n => { const s = Math.floor(n.dur * sr); const r = { f: n.freq, len: s, at: total }; total += s; return r; });
-    const dataSize = total * 2;
-    const buf = new ArrayBuffer(44 + dataSize);
-    const v = new DataView(buf);
-    const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-    ws(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true); ws(8, 'WAVE');
-    ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-    v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
-    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-    ws(36, 'data'); v.setUint32(40, dataSize, true);
-    for (let s = 0; s < total; s++) {
-      let smp = 0;
-      for (const seg of segs) {
-        if (s >= seg.at && s < seg.at + seg.len) {
-          const t = (s - seg.at) / sr;
-          const fade = Math.min(t * 80, (seg.len / sr - t) * 80, 1);
-          smp = Math.sin(2 * Math.PI * seg.f * t) * fade * 0.4;
-          break;
-        }
-      }
-      v.setInt16(44 + s * 2, Math.max(-32768, Math.min(32767, Math.floor(smp * 32767))), true);
-    }
-    return new Blob([buf], { type: 'audio/wav' });
-  }
-
-  // 提前创建 audio 元素并加入DOM（iOS 要求 audio 元素必须在 DOM 中）
-  var musicBlobUrl = URL.createObjectURL(buildWAV());
+  // 预创建 audio 元素，用真实文件URL（微信不支持Blob URL）
   var audioEl = document.createElement('audio');
-  audioEl.src = musicBlobUrl;
+  audioEl.src = 'music.wav';
   audioEl.preload = 'auto';
   audioEl.volume = 0.3;
   audioEl.style.display = 'none';
   document.body.appendChild(audioEl);
-  musicAudio = audioEl;
 
   function initMusic() {
     if (musicStarted) return;
     musicStarted = true;
     if (overlay) overlay.classList.add('hidden');
     try {
-      // iOS 需要在用户手势里同步调用 play
       var p = audioEl.play();
-      if (p && p.catch) { p.catch(function() {}); }
+      if (p && p.catch) p.catch(function() {});
     } catch(e) {}
   }
 
