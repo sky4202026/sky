@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🎂 生日快乐！</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #1a0533 0%, #2d1b69 25%, #6b2fa0 50%, #e85d75 75%, #ff9a8b 100%);
+    background-size: 400% 400%;
+    animation: bgShift 20s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  @keyframes bgShift {
+    0%, 100% { background-position: 0% 50%; }
+    25% { background-position: 100% 0%; }
+    50% { background-position: 100% 100%; }
+    75% { background-position: 0% 100%; }
+  }
+
+  /* ===== 欢迎遮罩 ===== */
+  .welcome-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.6s, visibility 0.6s;
+    cursor: pointer;
+  }
+  .welcome-overlay.hidden {
+    opacity: 0; visibility: hidden; pointer-events: none;
+  }
+  .welcome-card {
+    text-align: center;
+    animation: welcomePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes welcomePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+  .welcome-emoji { font-size: 72px; margin-bottom: 16px; }
+  .welcome-text {
+    font-size: 22px; font-weight: 700; color: #fff;
+    letter-spacing: 6px; line-height: 1.8;
+    text-shadow: 0 2px 10px rgba(255,215,0,0.5);
+  }
+  .welcome-sub {
+    font-size: 15px; color: rgba(255,255,255,0.7);
+    margin-top: 12px; letter-spacing: 2px;
+  }
+
+  /* ===== 星星 ===== */
+  .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+
+  /* ===== Canvas纸屑层 ===== */
+  #confettiCanvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
+  }
+
+  /* ===== 气球 ===== */
+  .balloons { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .balloon {
+    position: absolute;
+    bottom: -200px;
+    animation: floatUp var(--dur) var(--delay) ease-in infinite;
+  }
+  .balloon-body {
+    width: var(--size);
+    height: calc(var(--size) * 1.25);
+    background: var(--color);
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+    position: relative;
+    box-shadow: inset -5px -10px 15px rgba(0,0,0,0.15);
+  }
+  .balloon-body::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 10px solid var(--color);
+  }
+  .balloon-string {
+    width: 1.5px;
+    height: 60px;
+    background: rgba(255,255,255,0.6);
+    margin: 0 auto;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.9; }
+    50% { transform: translateY(-60vh) translateX(30px) rotate(5deg); opacity: 0.7; }
+    100% { transform: translateY(-120vh) translateX(-20px) rotate(-3deg); opacity: 0; }
+  }
+
+  /* ===== 主内容区 ===== */
+  .content {
+    position: relative; z-index: 5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; padding: 20px;
+  }
+
+  /* ===== 蛋糕 ===== */
+  .cake-wrapper {
+    animation: cakeBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform: scale(0);
+  }
+  @keyframes cakeBounce {
+    0% { transform: scale(0) rotate(-10deg); }
+    60% { transform: scale(1.1) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .cake {
+    position: relative;
+    width: 196px;
+    margin: 0 auto;
+  }
+  /* 盘子 */
+  .plate {
+    width: 196px; height: 18px;
+    background: linear-gradient(180deg, #f0e6d3 0%, #d4c4a8 50%, #c4b498 100%);
+    border-radius: 0 0 50% 50%;
+    margin: -2px auto 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+  /* 第三层（底层）—— 粉色草莓奶油 */
+  .layer3 {
+    width: 180px; height: 55px;
+    margin: -5px auto 0;
+    background: linear-gradient(180deg, #f8c8d4 0%, #f0a0b8 25%, #e87898 100%);
+    border-radius: 10px 10px 4px 4px;
+    position: relative;
+    box-shadow: inset 0 5px 15px rgba(255,255,255,0.3);
+  }
+  /* 底层底部奶油裱花条（连续波浪） */
+  .layer3::before {
+    content: '';
+    position: absolute;
+    bottom: -6px; left: 0; right: 0;
+    height: 12px;
+    background: repeating-linear-gradient(
+      90deg,
+      #fff8f0 0px, #fff8f0 14px,
+      #ffe8d6 14px, #ffe8d6 15px,
+      #fff8f0 15px, #fff8f0 16px,
+      #ffe8d6 16px, #ffe8d6 17px,
+      #fff8f0 17px, #fff8f0 18px
+    );
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  }
+  .layer3::after {
+    content: '';
+    position: absolute; top: 10px; left: 6px; right: 6px;
+    height: 10px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 5px;
+  }
+  /* 第二层—— 香草奶油 */
+  .layer2 {
+    width: 150px; height: 45px;
+    margin: -3px auto 0;
+    background: linear-gradient(180deg, #fff5d6 0%, #ffeaa7 25%, #fdcb6e 100%);
+    border-radius: 8px 8px 3px 3px;
+    position: relative;
+    box-shadow: inset 0 4px 12px rgba(255,255,255,0.45);
+  }
+  /* 中层底部奶油裱花条 */
+  .layer2::before {
+    content: '';
+    position: absolute;
+    bottom: -5px; left: 0; right: 0;
+    height: 10px;
+    background: linear-gradient(180deg, #fff8f0 0%, #ffe8d6 100%);
+    border-radius: 0 0 5px 5px;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.06);
+  }
+  .layer2::after {
+    content: '';
+    position: absolute; top: 8px; left: 5px; right: 5px;
+    height: 8px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 4px;
+  }
+  /* 第一层（顶层）—— 香草奶油 */
+  .layer1 {
+    width: 118px; height: 38px;
+    margin: -2px auto 0;
+    background: linear-gradient(180deg, #fff5d6 0%, #ffeaa7 25%, #fdcb6e 100%);
+    border-radius: 6px 6px 2px 2px;
+    position: relative;
+    box-shadow: inset 0 3px 10px rgba(255,255,255,0.45);
+  }
+  .layer1::after {
+    content: '';
+    position: absolute; top: 6px; left: 5px; right: 5px;
+    height: 6px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 3px;
+    z-index: 1;
+  }
+
+  /* ===== 蜡烛 ===== */
+  .candles {
+    display: flex; justify-content: center;
+    gap: 16px; margin-top: -22px;
+    position: relative; z-index: 2;
+  }
+  .candle {
+    display: flex; flex-direction: column; align-items: center;
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .candle:active { transform: scale(0.95); }
+  .candle-body {
+    width: 12px; height: 40px;
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .candle-body::before {
+    content: '';
+    position: absolute; top: 0; left: 2px; right: 2px;
+    height: 100%;
+    background: linear-gradient(90deg,
+      rgba(255,255,255,0.4) 0%,
+      rgba(255,255,255,0.1) 30%,
+      transparent 50%,
+      rgba(0,0,0,0.1) 80%
+    );
+  }
+  .candle:nth-child(1) .candle-body { background: linear-gradient(180deg, #ffd93d, #f0c000); }
+  .candle:nth-child(2) .candle-body { background: linear-gradient(180deg, #6bcb77, #4aaf57); }
+  .candle:nth-child(3) .candle-body { background: linear-gradient(180deg, #4d96ff, #2d7df6); }
+  /* 烛芯 */
+  .wick {
+    width: 2px; height: 6px; background: #333;
+    border-radius: 1px; margin-bottom: -1px;
+  }
+  /* 火焰 */
+  .flame {
+    position: relative; width: 18px; height: 28px; margin-top: -2px;
+    cursor: pointer;
+  }
+  .flame-inner {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 22px;
+    background: radial-gradient(ellipse at center,
+      #fff 0%, #ffe066 20%, #ff9f43 55%, #ff6b35 85%, transparent 100%
+    );
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    animation: flicker 0.15s ease-in-out infinite alternate;
+    box-shadow: 0 0 12px rgba(255,159,67,0.7), 0 0 25px rgba(255,107,53,0.4);
+  }
+  .flame-glow {
+    position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 10px;
+    background: radial-gradient(ellipse, rgba(255,159,67,0.5) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  @keyframes flicker {
+    0% { transform: translateX(-50%) scaleY(1) scaleX(0.95); }
+    25% { transform: translateX(-55%) scaleY(1.1) scaleX(0.85); }
+    50% { transform: translateX(-45%) scaleY(0.9) scaleX(1.05); }
+    75% { transform: translateX(-52%) scaleY(1.05) scaleX(0.9); }
+    100% { transform: translateX(-48%) scaleY(0.95) scaleX(1); }
+  }
+  /* 火焰熄灭状态 */
+  .flame.out .flame-inner { display: none; }
+  .flame.out .flame-glow { display: none; }
+  .flame.out::after {
+    content: '💨';
+    position: absolute;
+    font-size: 12px;
+    animation: smokeUp 1.5s ease-out forwards;
+  }
+  @keyframes smokeUp {
+    0% { opacity: 0.8; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-30px) scale(2); }
+  }
+
+  /* ===== 祝福文字 ===== */
+  .blessing {
+    text-align: center; z-index: 5;
+    animation: textFadeIn 1.5s ease 0.5s both;
+  }
+  @keyframes textFadeIn {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .blessing-name {
+    font-size: clamp(28px, 6vw, 42px);
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ffec99, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(255,215,0,0.5));
+    margin-bottom: 8px;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0%, 100% { filter: drop-shadow(0 2px 4px rgba(255,215,0,0.5)); }
+    50% { filter: drop-shadow(0 2px 12px rgba(255,215,0,0.9)); }
+  }
+  .blessing-main {
+    font-size: clamp(22px, 5vw, 34px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    margin-bottom: 6px;
+  }
+  .blessing-sub {
+    font-size: clamp(13px, 3vw, 18px);
+    color: rgba(255,255,255,0.85);
+    font-weight: 400;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.25);
+    line-height: 1.6;
+  }
+  .blessing-hearts {
+    font-size: 28px; margin-top: 8px;
+    animation: heartBeat 1s ease-in-out infinite;
+  }
+  @keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.3); }
+    30% { transform: scale(1); }
+  }
+
+  /* ===== 底部提示 ===== */
+  .hint {
+    position: fixed; bottom: 30px; z-index: 5;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    animation: pulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  /* ===== 响应式适配 ===== */
+  @media (max-width: 360px) {
+    .cake { width: 162px; }
+    .plate { width: 162px; height: 14px; }
+    .layer3 { width: 150px; height: 45px; }
+    .layer2 { width: 126px; height: 38px; }
+    .layer1 { width: 100px; height: 32px; }
+    .candles { gap: 10px; margin-top: -18px; }
+    .candle-body { width: 10px; height: 34px; }
+    .flame { width: 15px; height: 24px; }
+    .flame-inner { width: 12px; height: 18px; }
+  }
+  @media (min-width: 768px) {
+    .cake { width: 236px; }
+    .plate { width: 236px; height: 22px; }
+    .layer3 { width: 220px; height: 65px; }
+    .layer2 { width: 180px; height: 55px; }
+    .layer1 { width: 142px; height: 45px; }
+    .candles { gap: 22px; margin-top: -26px; }
+    .candle-body { width: 14px; height: 48px; }
+    .flame { width: 22px; height: 34px; }
+    .flame-inner { width: 16px; height: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 欢迎遮罩 -->
+<div class="welcome-overlay" id="welcomeOverlay">
+  <div class="welcome-card">
+    <div class="welcome-emoji">🎂</div>
+    <div class="welcome-text">点 击 开 启<br>生 日 祝 福</div>
+    <div class="welcome-sub">送给 刘老板</div>
+  </div>
+</div>
+
+<!-- 星星 -->
+<div class="stars" id="stars"></div>
+
+<!-- 气球 -->
+<div class="balloons" id="balloons"></div>
+
+<!-- Canvas纸屑 -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- 主内容 -->
+<div class="content">
+  <!-- 蛋糕 -->
+  <div class="cake-wrapper">
+    <div class="cake">
+      <div class="candles" id="candles">
+        <div class="candle" data-lit="true">
+          <div class="flame"><div class="flame-inner"></div><div class="flame-glow"></div></div>
+          <div class="wick"></div>
+          <div class="candle-body"></div>
+        </div>
+        <div class="candle" data-lit="true">
+          <div class="flame"><div class="flame-inner"></div><div class="flame-glow"></div></div>
+          <div class="wick"></div>
+          <div class="candle-body"></div>
+        </div>
+        <div class="candle" data-lit="true">
+          <div class="flame"><div class="flame-inner"></div><div class="flame-glow"></div></div>
+          <div class="wick"></div>
+          <div class="candle-body"></div>
+        </div>
+      </div>
+      <div class="layer1"></div>
+      <div class="layer2"></div>
+      <div class="layer3"></div>
+      <div class="plate"></div>
+    </div>
+  </div>
+
+  <!-- 祝福文字 -->
+  <div class="blessing">
+    <div class="blessing-name">刘老板 🎂</div>
+    <div class="blessing-main">生 日 快 乐</div>
+    <div class="blessing-sub">
+      来自姐姐、姐夫以及外甥女<br>最真挚的祝福 💝
+    </div>
+    <div class="blessing-hearts">❤️ 🎉 🎊 ✨</div>
+  </div>
+</div>
+
+<!-- 底部提示 -->
+<div class="hint" id="hint">👆 点击蜡烛吹灭它～</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== 星星生成 ====================
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 3 + 1.5;
+    star.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      top: ${Math.random() * 100}%;
+      left: ${Math.random() * 100}%;
+      --dur: ${Math.random() * 2 + 1.5}s;
+      --delay: ${Math.random() * 3}s;
+    `;
+    starsEl.appendChild(star);
+  }
+
+  // ==================== 气球生成 ====================
+  const balloonColors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff922b', '#cc5de8', '#ff8787', '#74c0fc'];
+  const balloonsEl = document.getElementById('balloons');
+  for (let i = 0; i < 12; i++) {
+    const balloon = document.createElement('div');
+    balloon.className = 'balloon';
+    const size = Math.random() * 30 + 35;
+    balloon.style.cssText = `
+      left: ${Math.random() * 90}%;
+      --size: ${size}px;
+      --color: ${balloonColors[Math.floor(Math.random() * balloonColors.length)]};
+      --dur: ${Math.random() * 6 + 10}s;
+      --delay: ${Math.random() * 8}s;
+    `;
+    balloon.innerHTML = `
+      <div class="balloon-body"></div>
+      <div class="balloon-string"></div>
+    `;
+    balloonsEl.appendChild(balloon);
+  }
+
+  // ==================== Canvas 纸屑系统 ====================
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  let confettiParticles = [];
+  let canvasW, canvasH;
+
+  function resizeCanvas() {
+    canvasW = window.innerWidth;
+    canvasH = window.innerHeight;
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  const confettiColors = [
+    '#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff922b',
+    '#cc5de8', '#ff8787', '#74c0fc', '#fcc419', '#f06595',
+    '#20c997', '#ffd700', '#ff6b9d', '#4ecdc4', '#ffe66d'
+  ];
+
+  function spawnConfetti(x, y, count) {
+    for (let i = 0; i < count; i++) {
+      confettiParticles.push({
+        x: x !== null ? x : Math.random() * canvasW,
+        y: y !== null ? y : -20,
+        vx: (Math.random() - 0.5) * 6,
+        vy: Math.random() * 3 + 2,
+        size: Math.random() * 8 + 4,
+        color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 12,
+        opacity: 1,
+        shape: Math.random() > 0.5 ? 'rect' : 'circle',
+        life: Math.random() * 0.5 + 0.8,
+      });
+    }
+  }
+
+  function updateConfetti() {
+    for (let i = confettiParticles.length - 1; i >= 0; i--) {
+      const p = confettiParticles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05; // gravity
+      p.rotation += p.rotationSpeed;
+      p.opacity -= 0.004;
+      p.vx *= 0.999;
+
+      if (p.y > canvasH + 30 || p.opacity <= 0) {
+        confettiParticles.splice(i, 1);
+      }
+    }
+  }
+
+  function drawConfetti() {
+    ctx.clearRect(0, 0, canvasW, canvasH);
+    for (const p of confettiParticles) {
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation * Math.PI / 180);
+      ctx.fillStyle = p.color;
+
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  function animateConfetti() {
+    updateConfetti();
+    drawConfetti();
+    requestAnimationFrame(animateConfetti);
+  }
+  animateConfetti();
+
+  // 初始撒一波纸屑
+  setTimeout(() => spawnConfetti(null, null, 60), 600);
+
+  // 持续微量纸屑
+  setInterval(() => {
+    if (confettiParticles.length < 80) {
+      spawnConfetti(null, null, 3);
+    }
+  }, 800);
+
+  // ==================== 蜡烛吹灭交互 ====================
+  const candles = document.querySelectorAll('.candle');
+  const hintEl = document.getElementById('hint');
+  let allBlown = false;
+  let blowCount = 0;
+
+  function blowOutCandle(candle) {
+    if (candle.dataset.lit !== 'true') return;
+    candle.dataset.lit = 'false';
+    const flame = candle.querySelector('.flame');
+    flame.classList.add('out');
+    blowCount++;
+
+    // 吹灭时弹出纸屑
+    const rect = candle.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top;
+    spawnConfetti(cx, cy, 25);
+
+    // 检查是否全部吹灭
+    if (blowCount >= 3 && !allBlown) {
+      allBlown = true;
+      hintEl.textContent = '🎉 生日快乐刘老板！🎉';
+      hintEl.style.fontSize = '16px';
+      hintEl.style.color = 'rgba(255,255,255,0.9)';
+      // 大爆发
+      setTimeout(() => spawnConfetti(null, null, 150), 100);
+      setTimeout(() => spawnConfetti(null, null, 100), 400);
+      setTimeout(() => spawnConfetti(null, null, 80), 800);
+    } else if (blowCount < 3) {
+      hintEl.textContent = `还剩 ${3 - blowCount} 根蜡烛～继续吹！`;
+    }
+  }
+
+  candles.forEach(candle => {
+    candle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      initMusic();
+      boostMusic(); // 点蜡烛声音变大
+      blowOutCandle(candle);
+    });
+    candle.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      initMusic();
+      boostMusic(); // 点蜡烛声音变大
+      blowOutCandle(candle);
+    });
+  });
+
+  // ==================== 点击背景撒纸屑 ====================
+  document.body.addEventListener('click', (e) => {
+    // 不重复处理蜡烛点击
+    if (e.target.closest('.candle')) return;
+    spawnConfetti(e.clientX || e.touches?.[0]?.clientX || null,
+                  e.clientY || e.touches?.[0]?.clientY || null, 20);
+  });
+
+  // ==================== 欢迎遮罩 ====================
+  const overlay = document.getElementById('welcomeOverlay');
+
+  // ==================== 背景音乐 ====================
+  let musicStarted = false;
+  let audioCtx = null;
+  let masterGain = null;
+
+  function initMusic() {
+    if (musicStarted) return;
+    musicStarted = true;
+
+    // 隐藏遮罩
+    if (overlay) overlay.classList.add('hidden');
+
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.06, audioCtx.currentTime); // 初始轻声
+      masterGain.connect(audioCtx.destination);
+
+      const notes = [
+        { freq: 523.25, dur: 0.3 },  // C5
+        { freq: 523.25, dur: 0.3 },  // C5
+        { freq: 587.33, dur: 0.4 },  // D5
+        { freq: 523.25, dur: 0.4 },  // C5
+        { freq: 659.25, dur: 0.4 },  // E5
+        { freq: 587.33, dur: 0.6 },  // D5
+        { freq: 523.25, dur: 0.3 },  // C5
+        { freq: 523.25, dur: 0.3 },  // C5
+        { freq: 587.33, dur: 0.4 },  // D5
+        { freq: 523.25, dur: 0.4 },  // C5
+        { freq: 783.99, dur: 0.4 },  // G5
+        { freq: 659.25, dur: 0.6 },  // E5
+        { freq: 523.25, dur: 0.3 },  // C5
+        { freq: 523.25, dur: 0.3 },  // C5
+        { freq: 1046.50, dur: 0.4 }, // C6
+        { freq: 880.00, dur: 0.4 },  // A5
+        { freq: 659.25, dur: 0.4 },  // E5
+        { freq: 587.33, dur: 0.4 },  // D5
+        { freq: 698.46, dur: 0.3 },  // F5
+        { freq: 698.46, dur: 0.3 },  // F5
+        { freq: 659.25, dur: 0.4 },  // E5
+        { freq: 587.33, dur: 0.4 },  // D5
+        { freq: 783.99, dur: 0.4 },  // G5
+        { freq: 659.25, dur: 0.8 },  // E5
+      ];
+
+      let time = audioCtx.currentTime + 0.2;
+      notes.forEach(({ freq, dur }) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.5, time + 0.02);
+        gain.gain.setValueAtTime(0.5, time + dur - 0.04);
+        gain.gain.linearRampToValueAtTime(0, time + dur);
+        osc.connect(gain);
+        gain.connect(masterGain); // 经过主音量控制
+        osc.start(time);
+        osc.stop(time + dur);
+        time += dur;
+      });
+    } catch(e) {}
+  }
+
+  function boostMusic() {
+    if (!masterGain || !audioCtx) return;
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.28, audioCtx.currentTime + 0.5);
+  }
+
+  // 点击遮罩 → 开始音乐（轻声）
+  if (overlay) {
+    overlay.addEventListener('click', initMusic);
+    overlay.addEventListener('touchend', (e) => { e.preventDefault(); initMusic(); });
+  }
+
+  // ==================== 3秒后隐藏提示 ====================
+  setTimeout(() => {
+    if (blowCount === 0 && hintEl.textContent.includes('👆')) {
+      hintEl.style.opacity = '0';
+      hintEl.style.transition = 'opacity 1s';
+    }
+  }, 6000);
+
+})();
+</script>
+</body>
+</html>
