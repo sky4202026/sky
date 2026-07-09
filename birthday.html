@@ -669,6 +669,8 @@
 
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // 手机浏览器（iOS Safari / 微信）AudioContext 默认暂停，必须显式恢复
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       masterGain = audioCtx.createGain();
       masterGain.gain.setValueAtTime(0.06, audioCtx.currentTime); // 初始轻声
       masterGain.connect(audioCtx.destination);
